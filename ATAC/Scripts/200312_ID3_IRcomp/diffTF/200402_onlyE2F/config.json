@@ -1,0 +1,33 @@
+{
+  "par_general": {
+    "outdir": "/home/heyj/c010-datasets/Internal/2018-Ali/ATAC/200312_ID3_IRcomp/analysis/diffTF/200402_output_onlyE2F",
+    "maxCoresPerRule": 8,
+    "dir_TFBS_sorted": false,
+    "regionExtension": 100,
+    "comparisonType": "wt_IrrvsID3-ko_Irr.all",
+    "conditionComparison": "wt_Irr,ID3-ko_Irr",
+    "designContrast": "~ conditionSummary",
+    "designVariableTypes": "conditionSummary:factor",
+    "nPermutations": 0,
+    "nBootstraps": 1000,
+    "nCGBins": 10,
+    "TFs": "E2F1,E2F2,E2F3,E2F4,E2F5,E2F6,E2F7,E2F8",
+    "dir_scripts": "/home/heyj/tools/diffTF/src/R/",
+    "RNASeqIntegration": false
+  },
+  "samples": {
+    "summaryFile": "/home/heyj/c010-datasets/Internal/2018-Ali/ATAC/200312_ID3_IRcomp/analysis/diffTF/data/sample_anno.txt",
+    "pairedEnd": false
+  },
+  "peaks": {
+    "consensusPeaks": "",
+    "peakType": "macs",
+    "minOverlap": 2
+  },
+  "additionalInputFiles": {
+    "refGenome_fasta": "/home/heyj/tools/diffTF/example/stable/input/referenceGenome/hg19.fa",
+    "dir_TFBS": "/home/heyj/tools/diffTF/example/stable/input/hg19_TFBS",
+    "RNASeqCounts": "",
+    "HOCOMOCO_mapping": "/home/heyj/tools/diffTF/src/TF_Gene_TranslationTables/HOCOMOCO_v10/translationTable_hg19.csv"
+  }
+}

@@ -1,0 +1,104 @@
+---
+title: 'Ali''s RNAseq: All samples together Repeat Project: 03_batchRemoval_genes'
+output:
+  html_document:
+    df_print: paged
+---
+Remove batch effect of gene expression
+#libraries
+```{r message=FALSE, warning=FALSE}
+library(DESeq2)
+library(ggpubr)
+library(rafalib)
+library(pheatmap)
+library(limma)
+```
+#function for plotting pc 2 and 3
+```{r}
+plotPCA.alt <- function (object, intgroup = "condition", ntop = 500, returnData = FALSE) 
+{
+  rv <- rowVars(assay(object))
+  select <- order(rv, decreasing = TRUE)[seq_len(min(ntop, 
+                                                     length(rv)))]
+  pca <- prcomp(t(assay(object)[select, ]))
+  percentVar <- pca$sdev^2/sum(pca$sdev^2)
+  if (!all(intgroup %in% names(colData(object)))) {
+    stop("the argument 'intgroup' should specify columns of colData(dds)")
+  }
+  intgroup.df <- as.data.frame(colData(object)[, intgroup, drop = FALSE])
+  group <- if (length(intgroup) > 1) {
+    factor(apply(intgroup.df, 1, paste, collapse = " : "))
+  }
+  else {
+    colData(object)[[intgroup]]
+  }
+  d <- data.frame(PC2 = pca$x[, 2], PC3 = pca$x[, 3], group = group, 
+                  intgroup.df, name = colData(object)[,1])
+  if (returnData) {
+    attr(d, "percentVar") <- percentVar[2:3]
+    return(d)
+  }
+  ggplot(data = d, aes_string(x = "PC2", y = "PC3", color = "group", label = "name")) + 
+    geom_point(size = 3) + xlab(paste0("PC2: ", round(percentVar[2] * 100), "% variance")) + 
+    ylab(paste0("PC3: ", round(percentVar[3] * 100), "% variance")) + coord_fixed() + geom_text_repel(size=3) 
+  
+}
+```
+#folder
+```{r}
+base.dir<- "/home/epicwl/c010-datasets/Internal/2018-Ali/RNASeq/190308_odcf/all_data"
+data.dir <- file.path(base.dir, "data")
+base_results.dir <- file.path(base.dir, "results")
+results.dir<- file.path(base_results.dir , "tables")
+PreDE.dir <- file.path(base_results.dir,"PreDE")
+PostDE.dir <- file.path(base_results.dir,"PostDE")
+```
+#load dds  files and create vst 
+```{r}
+dds_genes <- readRDS(file = file.path(results.dir,"dds_group_genes.rds"))
+anno <- colData(dds_genes)
+vst_genes_or<- vst(dds_genes, blind=FALSE)
+saveRDS(vst_genes_or, file.path(results.dir,"vst_genes.rds"))
+#vst_genes_or<- readRDS(file = file.path(results.dir,"vst_genes.rds"))
+```
+#remove batch effect of replicates
+```{r}
+mat_genes <- assay(vst_genes_or)
+vst_genes <- vst_genes_or
+mat_genes <- limma::removeBatchEffect(mat_genes, vst_genes_or$replicate)
+assay(vst_genes) <- mat_genes
+```
+#plot batch removed data
+#pc 1 and 2
+```{r}
+pcaDatarld<- plotPCA(vst_genes, intgroup =  colnames(anno), returnData =TRUE, ntop=Inf)
+percentvarrld <- round(100* attr(pcaDatarld, "percentVar"))
+
+ggscatter(pcaDatarld, x="PC1", y="PC2",size=3,
+          color = "group_uncomplete", shape = "genotype", legend = "right",
+          ellipse = F ,mean.point = FALSE,label="replicate",repel=TRUE,
+          star.plot = F,  xlab=(paste0("PC1: ", percentvarrld[1], "% variance")), ylab=(paste0("PC2: ", percentvarrld[2], "% variance")) )
+```
+#pc 2 and 3
+```{r}
+pcaDatarld.alt<- plotPCA.alt(vst_genes, intgroup =  colnames(anno), returnData =TRUE, ntop=Inf)
+percentvarrld.alt <- round(100* attr(pcaDatarld.alt, "percentVar"))
+
+ggscatter(pcaDatarld.alt, x="PC2", y="PC3",size=3,
+          color = "group_uncomplete", shape = "genotype", legend = "right",
+          ellipse = F ,mean.point = FALSE,label="replicate",repel=TRUE,
+          star.plot = F,  xlab=(paste0("PC2: ", percentvarrld.alt[1], "% variance")), ylab=(paste0("PC3: ", percentvarrld.alt[2], "% variance")) )
+```
+#sample clustering
+```{r}
+dvst <- dist(t(assay(vst_genes)))
+hvst <- hclust(dvst)
+
+myplclust(hvst, labels=anno$group_complete, lab.col= as.numeric(as.factor(anno$group_uncomplete)), main="", cex=0.5)
+```
+
+#decide on which batch removal should be chosen --> replicate
+```{r}
+saveRDS(vst_genes, file = file.path(results.dir,"vst_genes_batchRem_rep.rds"))
+```
+
